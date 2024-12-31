@@ -12,10 +12,8 @@ import firrtl2.{
   Utils
 }
 
-/**
-  * Represents the initial value of the annotated memory.
-  * While not supported on normal ASIC flows, it can be useful for simulation and FPGA flows.
-  * This annotation is consumed by the verilog emitter.
+/** Represents the initial value of the annotated memory. While not supported on normal ASIC flows, it can be useful for
+  * simulation and FPGA flows. This annotation is consumed by the verilog emitter.
   */
 sealed trait MemoryInitAnnotation extends SingleTargetAnnotation[ReferenceTarget] with MemoryEmissionOption {
   def isRandomInit: Boolean
@@ -64,6 +62,18 @@ case class MemoryFileInlineAnnotation(
   override private[firrtl2] def dedup: Option[(Any, Annotation, ReferenceTarget)] = Some(
     ((target.pathlessTarget, filename), copy(target = target.pathlessTarget), target)
   )
+}
+
+object MemoryFileInlineAnnotation {
+  def fromResource(
+    target:       ReferenceTarget,
+    resourcePath: String,
+    hexOrBinary:  MemoryLoadFileType.FileType = MemoryLoadFileType.Hex
+  ): MemoryFileInlineAnnotation = {
+    val memFilePath = new java.io.File(resourcePath.split("/").last)
+    firrtl2.util.BackendCompilationUtilities.copyResourceToFile(resourcePath, memFilePath)
+    MemoryFileInlineAnnotation(target, memFilePath.getCanonicalPath, hexOrBinary)
+  }
 }
 
 /** Initializes the memory inside the `ifndef SYNTHESIS` block (default) */
